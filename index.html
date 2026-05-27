@@ -44,16 +44,26 @@
     </div>
 
     <div class="card">
+        <input type="date" id="examDateInput" onchange="save()">
         <input type="text" id="subInput" placeholder="Add Subject...">
         <button onclick="addSubject()">Add Subject</button>
+        <button onclick="resetApp()" style="background:none; color:red; border:1px solid red; margin-top:10px;">Full Reset</button>
     </div>
 
     <div id="syllabusArea"></div>
 </div>
 
 <script>
-    let appData = JSON.parse(localStorage.getItem('studyUltimateData')) || { subjects: [] };
+    let appData = JSON.parse(localStorage.getItem('studyUltimateData')) || { examDate: "", subjects: [] };
     let taskChart = null, revChart = null;
+
+    function save() {
+        appData.examDate = document.getElementById('examDateInput').value;
+        localStorage.setItem('studyUltimateData', JSON.stringify(appData));
+        render();
+    }
+
+    function resetApp() { if(confirm("Delete everything?")) { localStorage.clear(); location.reload(); } }
 
     function addSubject() {
         const name = document.getElementById('subInput').value;
@@ -73,18 +83,15 @@
     function toggleTask(sIdx, tIdx) { appData.subjects[sIdx].tasks[tIdx].done = !appData.subjects[sIdx].tasks[tIdx].done; save(); }
     function addRevision(sIdx, tIdx) { appData.subjects[sIdx].tasks[tIdx].revs++; save(); }
     function pinTask(sIdx, tIdx) { appData.subjects[sIdx].tasks[tIdx].pinned = !appData.subjects[sIdx].tasks[tIdx].pinned; save(); }
-    function save() { localStorage.setItem('studyUltimateData', JSON.stringify(appData)); render(); }
 
     function updateCharts() {
         const labels = appData.subjects.map(s => s.name);
-        
         if (taskChart) taskChart.destroy();
         taskChart = new Chart(document.getElementById('taskChart'), {
             type: 'bar',
             data: { labels: labels, datasets: [{ label: 'Completed Topics', data: appData.subjects.map(s => s.tasks.filter(t => t.done).length), backgroundColor: '#4f46e5' }] },
             options: { maintainAspectRatio: false }
         });
-
         if (revChart) revChart.destroy();
         revChart = new Chart(document.getElementById('revChart'), {
             type: 'bar',
@@ -94,6 +101,7 @@
     }
 
     function render() {
+        document.getElementById('examDateInput').value = appData.examDate;
         const focusArea = document.getElementById('focusList'); focusArea.innerHTML = '';
         appData.subjects.forEach((s, sIdx) => {
             s.tasks.forEach((t, tIdx) => {
