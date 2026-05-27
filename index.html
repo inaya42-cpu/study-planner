@@ -18,6 +18,9 @@
         .focus-section { background: linear-gradient(135deg, #4f46e5, #818cf8); color: white; }
         .focus-item { background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; align-items: center; }
         h1, h2 { margin: 0 0 10px 0; font-size: 1.3rem; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px; }
+        .stat-box { background: #f1f5f9; padding: 15px; border-radius: 12px; text-align: center; }
+        .goal-num { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
         .chart-container { height: 180px; width: 100%; margin-top: 10px; }
         .prio-high { background-color: var(--high); color: var(--high-text); border-left: 5px solid #ef4444; }
         .prio-med { background-color: var(--med); color: var(--med-text); border-left: 5px solid #f59e0b; }
@@ -38,14 +41,18 @@
     </div>
 
     <div class="card">
-        <h2>📊 Progress Analytics</h2>
+        <div class="stats-grid">
+            <div class="stat-box"><div id="dailyGoal" class="goal-num">0</div><small>Required Tasks/Day</small></div>
+            <div class="stat-box"><div id="daysLeft" class="goal-num">0</div><small>Days Remaining</small></div>
+        </div>
         <div class="chart-container"><canvas id="taskChart"></canvas></div>
         <div class="chart-container" style="margin-top: 30px;"><canvas id="revChart"></canvas></div>
     </div>
 
     <div class="card">
+        <label>Board Exam Date:</label>
         <input type="date" id="examDateInput" onchange="save()">
-        <input type="text" id="subInput" placeholder="Add Subject...">
+        <input type="text" id="subInput" placeholder="Add Subject (e.g. Biology)">
         <button onclick="addSubject()">Add Subject</button>
         <button onclick="resetApp()" style="background:none; color:red; border:1px solid red; margin-top:10px;">Full Reset</button>
     </div>
@@ -102,6 +109,12 @@
 
     function render() {
         document.getElementById('examDateInput').value = appData.examDate;
+        const days = Math.ceil((new Date(appData.examDate) - new Date()) / (1000 * 60 * 60 * 24));
+        document.getElementById('daysLeft').innerText = days > 0 ? days : 0;
+        let totalLeft = 0;
+        appData.subjects.forEach(s => totalLeft += s.tasks.filter(t => !t.done).length);
+        document.getElementById('dailyGoal').innerText = (days > 0) ? (totalLeft / days).toFixed(1) : totalLeft;
+
         const focusArea = document.getElementById('focusList'); focusArea.innerHTML = '';
         appData.subjects.forEach((s, sIdx) => {
             s.tasks.forEach((t, tIdx) => {
@@ -116,17 +129,4 @@
                     <div style="display:flex; justify-content:space-between; align-items:center;"><h2>${sub.name}</h2><button class="btn-small" onclick="addTask(${sIdx})">+ Topic</button></div>
                     ${sub.tasks.map((t, tIdx) => `
                         <div class="task-item ${t.priority}">
-                            <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${sIdx}, ${tIdx})">
-                            <span style="flex:1; ${t.done ? 'text-decoration:line-through; opacity:0.6' : ''}">${t.title}</span>
-                            <span class="rev-count">Rev: ${t.revs}</span>
-                            <button class="btn-small" onclick="addRevision(${sIdx}, ${tIdx})">+R</button>
-                            <button class="btn-small" onclick="pinTask(${sIdx}, ${tIdx})">${t.pinned ? '📍' : '📌'}</button>
-                        </div>`).join('')}
-                </div>`;
-        });
-        updateCharts();
-    }
-    render();
-</script>
-</body>
-</html>
+                            <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${sIdx}, ${tIdx})
