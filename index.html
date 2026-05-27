@@ -3,36 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>90% Board Prep - Topper Edition</title>
+    <title>90% Board Prep - Ultimate Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #4f46e5; --bg: #f8fafc; --card: #ffffff; }
-        body { font-family: sans-serif; background: var(--bg); padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        :root { 
+            --high: #fee2e2; --high-text: #991b1b;
+            --med: #fef3c7; --med-text: #92400e;
+            --low: #dcfce7; --low-text: #166534;
+            --primary: #4f46e5; --bg: #f8fafc; --card: #ffffff;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #1e293b; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         .container { max-width: 700px; width: 100%; }
-        .card { background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .focus-section { background: linear-gradient(135deg, #4f46e5, #818cf8); color: white; }
+        .focus-item { background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; align-items: center; }
+        h1, h2 { margin: 0 0 10px 0; font-size: 1.3rem; }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px; }
         .stat-box { background: #f1f5f9; padding: 15px; border-radius: 12px; text-align: center; }
-        .goal-num { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
-        .task-item { display: flex; align-items: center; gap: 8px; padding: 10px; border-bottom: 1px solid #f1f5f9; }
-        .rev-count { font-size: 0.8rem; background: #e0e7ff; padding: 2px 8px; border-radius: 10px; color: var(--primary); }
-        button { background: var(--primary); color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; }
+        .goal-num { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+        .prio-high { background-color: var(--high); color: var(--high-text); border-left: 5px solid #ef4444; }
+        .prio-med { background-color: var(--med); color: var(--med-text); border-left: 5px solid #f59e0b; }
+        .prio-low { background-color: var(--low); color: var(--low-text); border-left: 5px solid #10b981; }
+        input, select, button { padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #cbd5e1; width: 100%; box-sizing: border-box; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-small { width: auto; padding: 4px 10px; font-size: 0.75rem; }
+        .task-item { display: flex; align-items: center; gap: 10px; padding: 12px; margin: 8px 0; border-radius: 8px; font-weight: 500; border: 1px solid #e2e8f0; }
+        .rev-count { font-size: 0.75rem; background: rgba(0,0,0,0.05); padding: 4px 8px; border-radius: 6px; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <div class="card focus-section">
+        <h1>🎯 Today's Focus</h1>
+        <div id="focusList"></div>
+    </div>
+
     <div class="card">
-        <h1>🎯 Topper's Dashboard</h1>
         <div class="stats-grid">
-            <div class="stat-box"><div id="dailyGoal" class="goal-num">0</div><small>Tasks/Day</small></div>
             <div class="stat-box"><div id="daysLeft" class="goal-num">0</div><small>Days Left</small></div>
+            <div class="stat-box"><div id="totalRevs" class="goal-num">0</div><small>Total Revisions</small></div>
         </div>
-        <canvas id="myChart" height="150"></canvas>
     </div>
 
     <div class="card">
         <input type="date" id="examDateInput" onchange="save()">
-        <input type="text" id="subInput" placeholder="New Subject...">
+        <input type="text" id="subInput" placeholder="Add Subject...">
         <button onclick="addSubject()">Add Subject</button>
     </div>
 
@@ -40,23 +56,32 @@
 </div>
 
 <script>
-    let appData = JSON.parse(localStorage.getItem('topperData')) || { examDate: "", subjects: [] };
-    let myChart = null;
+    let appData = JSON.parse(localStorage.getItem('studyUltimateData')) || { examDate: "", subjects: [] };
 
     function save() {
         appData.examDate = document.getElementById('examDateInput').value;
-        localStorage.setItem('topperData', JSON.stringify(appData));
+        localStorage.setItem('studyUltimateData', JSON.stringify(appData));
         render();
     }
 
     function addSubject() {
         const name = document.getElementById('subInput').value;
-        if (name) { appData.subjects.push({ name, tasks: [] }); document.getElementById('subInput').value = ''; save(); }
+        if (name) { appData.subjects.push({ name: name, tasks: [] }); document.getElementById('subInput').value = ''; save(); }
     }
 
     function addTask(sIdx) {
         const title = prompt("Topic Name:");
-        if (title) { appData.subjects[sIdx].tasks.push({ title, revs: 0 }); save(); }
+        const prio = prompt("Priority? (1=High, 2=Med, 3=Low)");
+        if (title) {
+            const priorityClass = prio === "1" ? "prio-high" : (prio === "2" ? "prio-med" : "prio-low");
+            appData.subjects[sIdx].tasks.push({ title, done: false, priority: priorityClass, revs: 0, pinned: false });
+            save();
+        }
+    }
+
+    function toggleTask(sIdx, tIdx) {
+        appData.subjects[sIdx].tasks[tIdx].done = !appData.subjects[sIdx].tasks[tIdx].done;
+        save();
     }
 
     function addRevision(sIdx, tIdx) {
@@ -64,34 +89,44 @@
         save();
     }
 
+    function pinTask(sIdx, tIdx) {
+        appData.subjects[sIdx].tasks[tIdx].pinned = !appData.subjects[sIdx].tasks[tIdx].pinned;
+        save();
+    }
+
     function render() {
         document.getElementById('examDateInput').value = appData.examDate;
         const days = Math.ceil((new Date(appData.examDate) - new Date()) / (1000 * 60 * 60 * 24));
         document.getElementById('daysLeft').innerText = days > 0 ? days : 0;
-        
+
+        let totalRevs = 0;
+        const focusArea = document.getElementById('focusList');
+        focusArea.innerHTML = '';
+        appData.subjects.forEach((s, sIdx) => {
+            s.tasks.forEach((t, tIdx) => {
+                totalRevs += t.revs;
+                if(t.pinned && !t.done) {
+                    focusArea.innerHTML += `<div class="focus-item"><span><b>${s.name}</b>: ${t.title}</span><button class="btn-small" onclick="toggleTask(${sIdx}, ${tIdx})">Done</button></div>`;
+                }
+            });
+        });
+        document.getElementById('totalRevs').innerText = totalRevs;
+
         const area = document.getElementById('syllabusArea');
         area.innerHTML = '';
         appData.subjects.forEach((sub, sIdx) => {
-            area.innerHTML += `<div class="card"><h2>${sub.name}</h2><button onclick="addTask(${sIdx})">+ Topic</button>
-                ${sub.tasks.map((t, tIdx) => `
-                    <div class="task-item">
-                        <span style="flex:1">${t.title}</span>
-                        <span class="rev-count">Revs: ${t.revs}</span>
-                        <button onclick="addRevision(${sIdx}, ${tIdx})">Revise</button>
-                    </div>`).join('')}</div>`;
-        });
-        updateCharts();
-    }
-
-    function updateCharts() {
-        const ctx = document.getElementById('myChart').getContext('2d');
-        if (myChart) myChart.destroy();
-        myChart = new Chart(ctx, {
-            type: 'bar',
-            data: { 
-                labels: appData.subjects.map(s => s.name), 
-                datasets: [{ label: 'Total Revisions', data: appData.subjects.map(s => s.tasks.reduce((a, b) => a + b.revs, 0)), backgroundColor: '#4f46e5' }] 
-            }
+            area.innerHTML += `
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center;"><h2>${sub.name}</h2><button class="btn-small" onclick="addTask(${sIdx})">+ Topic</button></div>
+                    ${sub.tasks.map((t, tIdx) => `
+                        <div class="task-item ${t.priority}">
+                            <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${sIdx}, ${tIdx})">
+                            <span style="flex:1; ${t.done ? 'text-decoration:line-through; opacity:0.6' : ''}">${t.title}</span>
+                            <span class="rev-count">Rev: ${t.revs}</span>
+                            <button class="btn-small" onclick="addRevision(${sIdx}, ${tIdx})">+Rev</button>
+                            <button class="btn-small" onclick="pinTask(${sIdx}, ${tIdx})">${t.pinned ? '📍' : '📌'}</button>
+                        </div>`).join('')}
+                </div>`;
         });
     }
 
