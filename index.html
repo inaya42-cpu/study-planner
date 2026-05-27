@@ -18,18 +18,15 @@
         .focus-section { background: linear-gradient(135deg, #4f46e5, #818cf8); color: white; }
         .focus-item { background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; align-items: center; }
         h1, h2 { margin: 0 0 10px 0; font-size: 1.3rem; }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px; }
-        .stat-box { background: #f1f5f9; padding: 15px; border-radius: 12px; text-align: center; }
-        .goal-num { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+        .chart-container { height: 180px; width: 100%; margin-top: 10px; }
         .prio-high { background-color: var(--high); color: var(--high-text); border-left: 5px solid #ef4444; }
         .prio-med { background-color: var(--med); color: var(--med-text); border-left: 5px solid #f59e0b; }
         .prio-low { background-color: var(--low); color: var(--low-text); border-left: 5px solid #10b981; }
-        input, select, button { padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #cbd5e1; width: 100%; box-sizing: border-box; }
+        input, button { padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #cbd5e1; width: 100%; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-small { width: auto; padding: 4px 10px; font-size: 0.75rem; }
         .task-item { display: flex; align-items: center; gap: 10px; padding: 12px; margin: 8px 0; border-radius: 8px; font-weight: 500; border: 1px solid #e2e8f0; }
         .rev-count { font-size: 0.75rem; background: rgba(0,0,0,0.05); padding: 4px 8px; border-radius: 6px; }
-        .chart-container { height: 200px; width: 100%; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -41,17 +38,12 @@
     </div>
 
     <div class="card">
-        <div class="stats-grid">
-            <div class="stat-box"><div id="daysLeft" class="goal-num">0</div><small>Days Left</small></div>
-            <div class="stat-box"><div id="totalRevs" class="goal-num">0</div><small>Total Revisions</small></div>
-        </div>
-        <div class="chart-container">
-            <canvas id="myChart"></canvas>
-        </div>
+        <h2>📊 Progress Analytics</h2>
+        <div class="chart-container"><canvas id="taskChart"></canvas></div>
+        <div class="chart-container" style="margin-top: 30px;"><canvas id="revChart"></canvas></div>
     </div>
 
     <div class="card">
-        <input type="date" id="examDateInput" onchange="save()">
         <input type="text" id="subInput" placeholder="Add Subject...">
         <button onclick="addSubject()">Add Subject</button>
     </div>
@@ -60,14 +52,8 @@
 </div>
 
 <script>
-    let appData = JSON.parse(localStorage.getItem('studyUltimateData')) || { examDate: "", subjects: [] };
-    let myChart = null;
-
-    function save() {
-        appData.examDate = document.getElementById('examDateInput').value;
-        localStorage.setItem('studyUltimateData', JSON.stringify(appData));
-        render();
-    }
+    let appData = JSON.parse(localStorage.getItem('studyUltimateData')) || { subjects: [] };
+    let taskChart = null, revChart = null;
 
     function addSubject() {
         const name = document.getElementById('subInput').value;
@@ -84,54 +70,38 @@
         }
     }
 
-    function toggleTask(sIdx, tIdx) {
-        appData.subjects[sIdx].tasks[tIdx].done = !appData.subjects[sIdx].tasks[tIdx].done;
-        save();
-    }
+    function toggleTask(sIdx, tIdx) { appData.subjects[sIdx].tasks[tIdx].done = !appData.subjects[sIdx].tasks[tIdx].done; save(); }
+    function addRevision(sIdx, tIdx) { appData.subjects[sIdx].tasks[tIdx].revs++; save(); }
+    function pinTask(sIdx, tIdx) { appData.subjects[sIdx].tasks[tIdx].pinned = !appData.subjects[sIdx].tasks[tIdx].pinned; save(); }
+    function save() { localStorage.setItem('studyUltimateData', JSON.stringify(appData)); render(); }
 
-    function addRevision(sIdx, tIdx) {
-        appData.subjects[sIdx].tasks[tIdx].revs++;
-        save();
-    }
-
-    function pinTask(sIdx, tIdx) {
-        appData.subjects[sIdx].tasks[tIdx].pinned = !appData.subjects[sIdx].tasks[tIdx].pinned;
-        save();
-    }
-
-    function updateChart() {
-        const ctx = document.getElementById('myChart').getContext('2d');
-        if (myChart) myChart.destroy();
-        myChart = new Chart(ctx, {
+    function updateCharts() {
+        const labels = appData.subjects.map(s => s.name);
+        
+        if (taskChart) taskChart.destroy();
+        taskChart = new Chart(document.getElementById('taskChart'), {
             type: 'bar',
-            data: { 
-                labels: appData.subjects.map(s => s.name), 
-                datasets: [{ label: 'Revisions', data: appData.subjects.map(s => s.tasks.reduce((a, b) => a + b.revs, 0)), backgroundColor: '#4f46e5' }] 
-            },
+            data: { labels: labels, datasets: [{ label: 'Completed Topics', data: appData.subjects.map(s => s.tasks.filter(t => t.done).length), backgroundColor: '#4f46e5' }] },
+            options: { maintainAspectRatio: false }
+        });
+
+        if (revChart) revChart.destroy();
+        revChart = new Chart(document.getElementById('revChart'), {
+            type: 'bar',
+            data: { labels: labels, datasets: [{ label: 'Total Revisions', data: appData.subjects.map(s => s.tasks.reduce((a, b) => a + b.revs, 0)), backgroundColor: '#10b981' }] },
             options: { maintainAspectRatio: false }
         });
     }
 
     function render() {
-        document.getElementById('examDateInput').value = appData.examDate;
-        const days = Math.ceil((new Date(appData.examDate) - new Date()) / (1000 * 60 * 60 * 24));
-        document.getElementById('daysLeft').innerText = days > 0 ? days : 0;
-
-        let totalRevs = 0;
-        const focusArea = document.getElementById('focusList');
-        focusArea.innerHTML = '';
+        const focusArea = document.getElementById('focusList'); focusArea.innerHTML = '';
         appData.subjects.forEach((s, sIdx) => {
             s.tasks.forEach((t, tIdx) => {
-                totalRevs += t.revs;
-                if(t.pinned && !t.done) {
-                    focusArea.innerHTML += `<div class="focus-item"><span><b>${s.name}</b>: ${t.title}</span><button class="btn-small" onclick="toggleTask(${sIdx}, ${tIdx})">Done</button></div>`;
-                }
+                if(t.pinned && !t.done) focusArea.innerHTML += `<div class="focus-item"><span><b>${s.name}</b>: ${t.title}</span><button class="btn-small" onclick="toggleTask(${sIdx}, ${tIdx})">Done</button></div>`;
             });
         });
-        document.getElementById('totalRevs').innerText = totalRevs;
 
-        const area = document.getElementById('syllabusArea');
-        area.innerHTML = '';
+        const area = document.getElementById('syllabusArea'); area.innerHTML = '';
         appData.subjects.forEach((sub, sIdx) => {
             area.innerHTML += `
                 <div class="card">
@@ -146,9 +116,8 @@
                         </div>`).join('')}
                 </div>`;
         });
-        updateChart();
+        updateCharts();
     }
-
     render();
 </script>
 </body>
