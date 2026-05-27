@@ -29,6 +29,7 @@
         .btn-small { width: auto; padding: 4px 10px; font-size: 0.75rem; }
         .task-item { display: flex; align-items: center; gap: 10px; padding: 12px; margin: 8px 0; border-radius: 8px; font-weight: 500; border: 1px solid #e2e8f0; }
         .rev-count { font-size: 0.75rem; background: rgba(0,0,0,0.05); padding: 4px 8px; border-radius: 6px; }
+        .chart-container { height: 200px; width: 100%; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -44,6 +45,9 @@
             <div class="stat-box"><div id="daysLeft" class="goal-num">0</div><small>Days Left</small></div>
             <div class="stat-box"><div id="totalRevs" class="goal-num">0</div><small>Total Revisions</small></div>
         </div>
+        <div class="chart-container">
+            <canvas id="myChart"></canvas>
+        </div>
     </div>
 
     <div class="card">
@@ -57,6 +61,7 @@
 
 <script>
     let appData = JSON.parse(localStorage.getItem('studyUltimateData')) || { examDate: "", subjects: [] };
+    let myChart = null;
 
     function save() {
         appData.examDate = document.getElementById('examDateInput').value;
@@ -94,6 +99,19 @@
         save();
     }
 
+    function updateChart() {
+        const ctx = document.getElementById('myChart').getContext('2d');
+        if (myChart) myChart.destroy();
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: { 
+                labels: appData.subjects.map(s => s.name), 
+                datasets: [{ label: 'Revisions', data: appData.subjects.map(s => s.tasks.reduce((a, b) => a + b.revs, 0)), backgroundColor: '#4f46e5' }] 
+            },
+            options: { maintainAspectRatio: false }
+        });
+    }
+
     function render() {
         document.getElementById('examDateInput').value = appData.examDate;
         const days = Math.ceil((new Date(appData.examDate) - new Date()) / (1000 * 60 * 60 * 24));
@@ -123,11 +141,12 @@
                             <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${sIdx}, ${tIdx})">
                             <span style="flex:1; ${t.done ? 'text-decoration:line-through; opacity:0.6' : ''}">${t.title}</span>
                             <span class="rev-count">Rev: ${t.revs}</span>
-                            <button class="btn-small" onclick="addRevision(${sIdx}, ${tIdx})">+Rev</button>
+                            <button class="btn-small" onclick="addRevision(${sIdx}, ${tIdx})">+R</button>
                             <button class="btn-small" onclick="pinTask(${sIdx}, ${tIdx})">${t.pinned ? '📍' : '📌'}</button>
                         </div>`).join('')}
                 </div>`;
         });
+        updateChart();
     }
 
     render();
