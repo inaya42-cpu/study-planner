@@ -102,31 +102,4 @@
         if (revChart) revChart.destroy();
         revChart = new Chart(document.getElementById('revChart'), {
             type: 'bar',
-            data: { labels: labels, datasets: [{ label: 'Total Revisions', data: appData.subjects.map(s => s.tasks.reduce((a, b) => a + b.revs, 0)), backgroundColor: '#10b981' }] },
-            options: { maintainAspectRatio: false }
-        });
-    }
-
-    function render() {
-        document.getElementById('examDateInput').value = appData.examDate;
-        const days = Math.ceil((new Date(appData.examDate) - new Date()) / (1000 * 60 * 60 * 24));
-        document.getElementById('daysLeft').innerText = days > 0 ? days : 0;
-        let totalLeft = 0;
-        appData.subjects.forEach(s => totalLeft += s.tasks.filter(t => !t.done).length);
-        document.getElementById('dailyGoal').innerText = (days > 0) ? (totalLeft / days).toFixed(1) : totalLeft;
-
-        const focusArea = document.getElementById('focusList'); focusArea.innerHTML = '';
-        appData.subjects.forEach((s, sIdx) => {
-            s.tasks.forEach((t, tIdx) => {
-                if(t.pinned && !t.done) focusArea.innerHTML += `<div class="focus-item"><span><b>${s.name}</b>: ${t.title}</span><button class="btn-small" onclick="toggleTask(${sIdx}, ${tIdx})">Done</button></div>`;
-            });
-        });
-
-        const area = document.getElementById('syllabusArea'); area.innerHTML = '';
-        appData.subjects.forEach((sub, sIdx) => {
-            area.innerHTML += `
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center;"><h2>${sub.name}</h2><button class="btn-small" onclick="addTask(${sIdx})">+ Topic</button></div>
-                    ${sub.tasks.map((t, tIdx) => `
-                        <div class="task-item ${t.priority}">
-                            <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${sIdx}, ${tIdx})
+            data: { labels: labels, datasets: [{ label: 'Total Revisions', data: appData.subjects.map(s => s.tasks.reduce((a, b) => a + b
