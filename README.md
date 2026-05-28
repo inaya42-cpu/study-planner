@@ -34,5 +34,5 @@ An intuitive, interactive web application designed to help Class 11 students (an
 ---
 
 ## ☘️ Preview
-![Study Planner Preview](Screenshot_20260528-214912.png)
+![Study Planner Preview](Screenshot_20260528-214858.png)
 
