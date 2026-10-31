@@ -4,7 +4,7 @@ An intuitive, interactive web application designed to help Class 11 students (an
 
 🔗 **[Live Demo](https://inaya42-cpu.github.io/study-planner/)**
 
-## Apps used
+## Apps 
 
 Created using google ai studio
 ---
